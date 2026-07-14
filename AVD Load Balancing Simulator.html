@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Alexandru Bratosin">
+    <title>AVD Load Balancer Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .range-slider {
+            width: 100%;
+            height: 0.5rem;
+            background-color: #e2e8f0;
+            border-radius: 9999px;
+            appearance: none;
+            outline: none;
+        }
+        .range-slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 1.25rem;
+            height: 1.25rem;
+            background-color: #4f46e5;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background-color 0.15s ease-in-out;
+        }
+        .range-slider::-webkit-slider-thumb:hover {
+            background-color: #4338ca;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen font-sans text-slate-900">
+    <header class="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-indigo-100 p-2 rounded-lg">
+                    <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-slate-900 leading-tight">Azure Virtual Desktop Simulator</h1>
+                    <p class="text-xs text-slate-500 font-medium tracking-wide">by Alexandru Bratosin</p>
+                </div>
+            </div>
+            <div class="text-xs bg-slate-100 px-3 py-1.5 rounded-full font-semibold text-slate-600 border border-slate-200">
+                Interactive Architecture Model
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <div class="col-span-1 lg:col-span-4 bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col gap-6">
+                <div>
+                    <h2 class="text-lg font-bold mb-1">Configuration Panel</h2>
+                    <p class="text-xs text-slate-500">Adjust the AVD host pool parameters.</p>
+                </div>
+
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center">
+                        <label class="block text-sm font-medium text-slate-700">Session Host VM Size</label>
+                        <span id="price-status" class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-medium border border-slate-200">Ready</span>
+                    </div>
+                    <select id="vm-size-select" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 outline-none transition-colors max-h-64 overflow-y-auto cursor-pointer">
+                        <optgroup label="General Purpose (v5)">
+                            <option value="Standard_D2s_v5">Standard D2s v5 (2 vCPU, 8GB)</option>
+                            <option value="Standard_D4s_v5" selected>Standard D4s v5 (4 vCPU, 16GB)</option>
+                            <option value="Standard_D8s_v5">Standard D8s v5 (8 vCPU, 32GB)</option>
+                            <option value="Standard_D16s_v5">Standard D16s v5 (16 vCPU, 64GB)</option>
+                            <option value="Standard_D32s_v5">Standard D32s v5 (32 vCPU, 128GB)</option>
+                        </optgroup>
+                        <optgroup label="General Purpose (v4)">
+                            <option value="Standard_D2s_v4">Standard D2s v4 (2 vCPU, 8GB)</option>
+                            <option value="Standard_D4s_v4">Standard D4s v4 (4 vCPU, 16GB)</option>
+                            <option value="Standard_D8s_v4">Standard D8s v4 (8 vCPU, 32GB)</option>
+                            <option value="Standard_D16s_v4">Standard D16s v4 (16 vCPU, 64GB)</option>
+                        </optgroup>
+                        <optgroup label="Memory Optimized (v5)">
+                            <option value="Standard_E2s_v5">Standard E2s v5 (2 vCPU, 16GB)</option>
+                            <option value="Standard_E4s_v5">Standard E4s v5 (4 vCPU, 32GB)</option>
+                            <option value="Standard_E8s_v5">Standard E8s v5 (8 vCPU, 64GB)</option>
+                            <option value="Standard_E16s_v5">Standard E16s v5 (16 vCPU, 128GB)</option>
+                        </optgroup>
+                        <optgroup label="Compute Optimized (v2)">
+                            <option value="Standard_F4s_v2">Standard F4s v2 (4 vCPU, 8GB)</option>
+                            <option value="Standard_F8s_v2">Standard F8s v2 (8 vCPU, 16GB)</option>
+                            <option value="Standard_F16s_v2">Standard F16s v2 (16 vCPU, 32GB)</option>
+                        </optgroup>
+                        <optgroup label="GPU Optimized (NVv4)">
+                            <option value="Standard_NV4as_v4">Standard NV4as v4 (4 vCPU, 14GB, 1/8 GPU)</option>
+                            <option value="Standard_NV8as_v4">Standard NV8as v4 (8 vCPU, 28GB, 1/4 GPU)</option>
+                            <option value="Standard_NV16as_v4">Standard NV16as v4 (16 vCPU, 56GB, 1/2 GPU)</option>
+                        </optgroup>
+                    </select>
+                </div>
+
+                <hr class="border-slate-100">
+
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-slate-700">Load Balancing Algorithm</label>
+                    <select id="algo-select" class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 outline-none transition-colors cursor-pointer">
+                        <option value="breadth">Breadth-first (Performance)</option>
+                        <option value="depth">Depth-first (Cost Optimization)</option>
+                    </select>
+                    <p id="algo-desc" class="text-[11px] text-slate-500 leading-tight mt-1"></p>
+                </div>
+
+                <hr class="border-slate-100">
+
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center">
+                        <label class="block text-sm font-medium text-slate-700">Incoming Users</label>
+                        <span id="users-val" class="px-2 py-1 bg-indigo-50 text-indigo-700 rounded text-xs font-bold border border-indigo-100">5</span>
+                    </div>
+                    <input type="range" id="users-slider" min="0" max="32" value="5" class="range-slider">
+                </div>
+
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center">
+                        <label class="block text-sm font-medium text-slate-700">Session Hosts Count</label>
+                        <span id="hosts-val" class="px-2 py-1 bg-slate-100 text-slate-800 rounded text-xs font-bold border border-slate-200">4</span>
+                    </div>
+                    <input type="range" id="hosts-slider" min="2" max="8" value="4" class="range-slider">
+                </div>
+
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center">
+                        <label class="block text-sm font-medium text-slate-700">Max Sessions per Host</label>
+                        <span id="max-val" class="px-2 py-1 bg-slate-100 text-slate-800 rounded text-xs font-bold border border-slate-200">4</span>
+                    </div>
+                    <input type="range" id="max-slider" min="2" max="6" value="4" class="range-slider">
+                </div>
+            </div>
+
+            <div class="col-span-1 lg:col-span-8 flex flex-col">
+                <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+                    <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 flex flex-col justify-center shadow-sm">
+                        <div class="text-xs text-indigo-600 font-bold uppercase tracking-wider mb-1">Active VMs</div>
+                        <div id="active-count" class="text-2xl font-black text-indigo-900">0</div>
+                    </div>
+                    <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100 flex flex-col justify-center shadow-sm">
+                        <div class="text-xs text-emerald-600 font-bold uppercase tracking-wider mb-1">Primary Benefit</div>
+                        <div id="benefit-text" class="text-sm font-bold text-emerald-900 leading-tight mt-1">Performance</div>
+                    </div>
+                    <div class="bg-amber-50 p-4 rounded-xl border border-amber-100 flex flex-col justify-center shadow-sm">
+                        <div class="text-xs text-amber-600 font-bold uppercase tracking-wider mb-1">Est. Hourly Cost</div>
+                        <div id="hourly-cost-val" class="text-2xl font-black text-amber-900">$0.00</div>
+                        <div class="text-[9px] text-amber-500 mt-1 uppercase font-semibold tracking-wide">Pay-As-You-Go</div>
+                    </div>
+                    <div class="bg-rose-50 p-4 rounded-xl border border-rose-100 flex flex-col justify-center shadow-sm">
+                        <div class="text-xs text-rose-600 font-bold uppercase tracking-wider mb-1">Est. Monthly Cost</div>
+                        <div id="cost-val" class="text-2xl font-black text-rose-900">$0</div>
+                        <div id="monthly-rate-label" class="text-[9px] text-rose-500 mt-1 uppercase font-semibold tracking-wide">Active VMs</div>
+                    </div>
+                    <div class="bg-teal-50 p-4 rounded-xl border border-teal-100 flex flex-col justify-center shadow-sm">
+                        <div class="text-xs text-teal-600 font-bold uppercase tracking-wider mb-1">Cost Savings</div>
+                        <div id="savings-val" class="text-2xl font-black text-teal-900">$0</div>
+                        <div class="text-[9px] text-teal-500 mt-1 uppercase font-semibold tracking-wide">Deallocated VMs</div>
+                    </div>
+                </div>
+
+                <div class="flex-1 bg-white rounded-2xl border border-slate-200 p-6 overflow-y-auto shadow-sm min-h-[400px]">
+                    <div id="vm-grid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                        </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Safely map DOM elements
+        const els = {
+            vmSize: document.getElementById('vm-size-select'),
+            priceStatus: document.getElementById('price-status'),
+            algo: document.getElementById('algo-select'),
+            algoDesc: document.getElementById('algo-desc'),
+            users: document.getElementById('users-slider'),
+            usersVal: document.getElementById('users-val'),
+            max: document.getElementById('max-slider'),
+            maxVal: document.getElementById('max-val'),
+            hosts: document.getElementById('hosts-slider'),
+            hostsVal: document.getElementById('hosts-val'),
+            vmGrid: document.getElementById('vm-grid'),
+            activeCount: document.getElementById('active-count'),
+            benefitText: document.getElementById('benefit-text'),
+            hourlyCostVal: document.getElementById('hourly-cost-val'),
+            costVal: document.getElementById('cost-val'),
+            savingsVal: document.getElementById('savings-val'),
+            monthlyRateLabel: document.getElementById('monthly-rate-label')
+        };
+
+        // Fallback offline pricing (Used instantly on load, or if API fails)
+        const fallbackPrices = {
+            'Standard_D2s_v5': 0.116, 'Standard_D4s_v5': 0.232, 'Standard_D8s_v5': 0.464, 'Standard_D16s_v5': 0.928, 'Standard_D32s_v5': 1.856,
+            'Standard_D2s_v4': 0.116, 'Standard_D4s_v4': 0.232, 'Standard_D8s_v4': 0.464, 'Standard_D16s_v4': 0.928,
+            'Standard_E2s_v5': 0.149, 'Standard_E4s_v5': 0.299, 'Standard_E8s_v5': 0.598, 'Standard_E16s_v5': 1.196,
+            'Standard_F4s_v2': 0.198, 'Standard_F8s_v2': 0.396, 'Standard_F16s_v2': 0.792,
+            'Standard_NV4as_v4': 0.45, 'Standard_NV8as_v4': 0.90, 'Standard_NV16as_v4': 1.80
+        };
+
+        // Cache object to store prices successfully retrieved from Azure
+        const livePriceCache = {};
+        const HOURS_PER_MONTH = 730;
+
+        const descriptions = {
+            'breadth': 'Distributes new user sessions evenly across all available session hosts. Best for maximizing user performance.',
+            'depth': 'Saturates a single session host up to the maximum limit before routing to the next host. Best for cost optimization by allowing unused hosts to be deallocated.'
+        };
+
+        // Targeted On-Demand Price Fetcher
+        async function fetchPriceForSelectedSku() {
+            const sku = els.vmSize.value;
+
+            // 1. If we already fetched this SKU, use the cached version instantly
+            if (livePriceCache[sku]) {
+                setStatusBadge(true);
+                updateSimulation();
+                return;
+            }
+
+            // 2. Otherwise, set UI to loading and query Azure API
+            els.priceStatus.textContent = 'Fetching live price...';
+            els.priceStatus.className = 'text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-medium border border-slate-200';
+
+            try {
+                // Strict URL encoding required by Azure OData standards
+                const filterString = `serviceName eq 'Virtual Machines' and armRegionName eq 'eastus' and armSkuName eq '${sku}' and priceType eq 'Consumption'`;
+                const url = `https://prices.azure.com/api/retail/prices?$filter=${encodeURIComponent(filterString)}`;
+                
+                const response = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' } });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP Error: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                // Find Windows, Non-Spot price
+                if (data && Array.isArray(data.Items)) {
+                    const standardWindowsItem = data.Items.find(item => 
+                        item.productName && item.productName.toLowerCase().includes("windows") &&
+                        item.meterName && !item.meterName.toLowerCase().includes("spot") && 
+                        !item.meterName.toLowerCase().includes("low priority")
+                    );
+
+                    if (standardWindowsItem && standardWindowsItem.retailPrice) {
+                        // Success! Store in cache
+                        livePriceCache[sku] = standardWindowsItem.retailPrice;
+                        setStatusBadge(true);
+                        updateSimulation();
+                        return; // Exit successfully
+                    }
+                }
+                throw new Error("Target SKU not found in Azure API payload.");
+
+            } catch (error) {
+                console.warn(`[Network/API Warning] Failed to fetch live price for ${sku}. Falling back to default pricing.`, error);
+                setStatusBadge(false);
+                updateSimulation();
+            }
+        }
+
+        // Helper to update the small pill badge next to the dropdown
+        function setStatusBadge(isLive) {
+            if (isLive) {
+                els.priceStatus.textContent = 'Live Price (East US)';
+                els.priceStatus.className = 'text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded font-medium border border-emerald-200';
+            } else {
+                els.priceStatus.textContent = 'Fallback Pricing';
+                els.priceStatus.className = 'text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-medium border border-amber-200';
+            }
+        }
+
+        // Core Visualization Engine
+        function updateSimulation() {
+            const algo = els.algo.value;
+            const users = parseInt(els.users.value);
+            const max = parseInt(els.max.value);
+            const totalHosts = parseInt(els.hosts.value);
+            
+            let vms = Array(totalHosts).fill(0);
+
+            els.usersVal.textContent = users;
+            els.maxVal.textContent = max;
+            els.hostsVal.textContent = totalHosts;
+            els.algoDesc.textContent = descriptions[algo];
+            els.benefitText.textContent = algo === 'breadth' ? 'Maximized Performance' : 'Cost Optimization';
+
+            if (algo === 'breadth') {
+                for (let i = 0; i < users; i++) {
+                    vms[i % totalHosts]++;
+                }
+            } else {
+                let remaining = users;
+                for (let i = 0; i < totalHosts; i++) {
+                    let toAdd = Math.min(remaining, max);
+                    vms[i] = toAdd;
+                    remaining -= toAdd;
+                }
+                let overflowIdx = 0;
+                while (remaining > 0) {
+                    vms[overflowIdx % totalHosts]++;
+                    remaining--;
+                    overflowIdx++;
+                }
+            }
+
+            renderVMs(vms, max);
+            updateCosts(vms, totalHosts);
+        }
+
+        function updateCosts(vms, totalHosts) {
+            const activeVMs = vms.filter(v => v > 0).length;
+            const deallocatedVMs = totalHosts - activeVMs;
+            
+            const selectedSku = els.vmSize.value;
+            // Prefer live cache if available, otherwise use hardcoded fallback
+            const hourlyRate = livePriceCache[selectedSku] || fallbackPrices[selectedSku];
+            const monthlyRatePerVm = hourlyRate * HOURS_PER_MONTH;
+            
+            const totalHourlyCost = activeVMs * hourlyRate;
+            const totalMonthlyCost = activeVMs * monthlyRatePerVm;
+            const totalMonthlySavings = deallocatedVMs * monthlyRatePerVm;
+
+            els.hourlyCostVal.textContent = `$${totalHourlyCost.toFixed(2)}`;
+            els.costVal.textContent = `$${totalMonthlyCost.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0})}`;
+            els.savingsVal.textContent = `$${totalMonthlySavings.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0})}`;
+            
+            els.monthlyRateLabel.textContent = `Active VMs ($${Math.round(monthlyRatePerVm)}/mo)`;
+        }
+
+        function renderVMs(vms, max) {
+            els.vmGrid.innerHTML = '';
+            let activeCount = 0;
+
+            vms.forEach((userCount, index) => {
+                const isActive = userCount > 0;
+                if (isActive) activeCount++;
+                
+                const isFull = userCount >= max;
+                const overLimit = userCount > max;
+
+                const cardBg = isActive 
+                    ? (overLimit ? 'bg-rose-50 border-rose-300' : 'bg-slate-50 border-indigo-200 shadow-md') 
+                    : 'bg-slate-50 border-dashed border-slate-300 opacity-60';
+                
+                const headerColor = isActive 
+                    ? (overLimit ? 'text-rose-700' : 'text-indigo-700') 
+                    : 'text-slate-500';
+                
+                const statusBadge = isActive 
+                    ? `<span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${isFull ? (overLimit ? 'bg-rose-200 text-rose-800' : 'bg-amber-100 text-amber-800') : 'bg-emerald-100 text-emerald-800'} uppercase tracking-wider">${isFull ? (overLimit ? 'Overloaded' : 'Full Capacity') : 'Running'}</span>`
+                    : `<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-200 text-slate-500 uppercase tracking-wider">Deallocated</span>`;
+
+                let usersHtml = '';
+                for (let i = 0; i < userCount; i++) {
+                    usersHtml += `
+                        <div class="w-7 h-7 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs ring-2 ring-white shadow-sm" title="User ${i+1}">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                        </div>
+                    `;
+                }
+
+                const emptySlots = Math.max(0, max - userCount);
+                for (let i = 0; i < emptySlots; i++) {
+                    usersHtml += `
+                        <div class="w-7 h-7 rounded-full bg-slate-100 text-slate-300 flex items-center justify-center border border-slate-200 border-dashed">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                        </div>
+                    `;
+                }
+
+                const vmCard = `
+                    <div class="rounded-xl border p-4 flex flex-col transition-all duration-300 ${cardBg}">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <div class="text-sm font-bold ${headerColor}">Session Host ${index + 1}</div>
+                                <div class="text-[10px] text-slate-500 mt-0.5 font-medium uppercase tracking-wide">Max Limit: ${max}</div>
+                            </div>
+                            ${statusBadge}
+                        </div>
+                        
+                        <div class="flex-1">
+                            <div class="text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-wider flex items-center justify-between">
+                                Active Sessions
+                                <span class="bg-white px-1.5 py-0.5 rounded border border-slate-200 text-slate-700">${userCount}</span>
+                            </div>
+                            <div class="flex flex-wrap gap-1.5">
+                                ${usersHtml}
+                            </div>
+                        </div>
+                        
+                        ${overLimit ? `<div class="mt-4 p-2 bg-rose-100 border border-rose-200 text-rose-800 text-[10px] rounded-lg font-bold flex gap-1.5 items-start"><svg class="w-3.5 h-3.5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg> Host capacity exceeded.</div>` : ''}
+                    </div>
+                `;
+                els.vmGrid.insertAdjacentHTML('beforeend', vmCard);
+            });
+
+            els.activeCount.textContent = activeCount;
+        }
+
+        // Attach Event Listeners
+        els.algo.addEventListener('change', updateSimulation);
+        els.users.addEventListener('input', updateSimulation);
+        els.max.addEventListener('input', updateSimulation);
+        els.hosts.addEventListener('input', updateSimulation);
+        
+        // When VM size changes, fetch that specific price and recalculate
+        els.vmSize.addEventListener('change', fetchPriceForSelectedSku);
+
+        // Boot-up sequence
+        updateSimulation();         // Run once immediately with fallbacks so the UI paints
+        fetchPriceForSelectedSku(); // Fire off the initial API request in the background
+    </script>
+</body>
+</html>
