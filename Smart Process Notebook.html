@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Notebook | Process & Solution Finder by Alexandru Bratosin</title>
+    <style>
+        :root {
+            /* True Light Theme */
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            
+            /* Enforced Black Text */
+            --text-main: #000000;
+            --text-muted: #000000;
+            --tip-text: #000000;
+            
+            --accent: #0078d4; 
+            --border: #e2e8f0;
+            --tip-bg: #eff6ff;
+            --tip-border: #0078d4;
+            
+            /* Light mode code elements */
+            --code-bg: #f1f5f9;
+            --code-text: #000000; 
+            --code-border: #cbd5e1;
+            
+            --success: #059669;
+            --danger: #dc2626;
+            
+            /* Enforced Black SVGs */
+            --logo-color: #000000;
+            --icon-color: #000000;
+            
+            /* Modern Shadows */
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.02);
+            --glow: 0 0 15px rgba(0, 120, 212, 0.15);
+        }
+
+        [data-theme="dark"] {
+            /* Refined Dark Theme */
+            --bg: #0b1120;
+            --surface: #1e293b;
+            
+            /* Enforced White Text */
+            --text-main: #ffffff;
+            --text-muted: #ffffff;
+            --tip-text: #ffffff;
+            
+            --accent: #3b82f6;
+            --border: #334155;
+            --tip-bg: #0f172a;
+            --tip-border: #3b82f6;
+            
+            /* Dark mode code elements - Enforced Green */
+            --code-bg: #000000;
+            --code-text: #4ade80; 
+            --code-border: #1e293b;
+            
+            --success: #10b981;
+            --danger: #ef4444;
+            
+            /* Enforced White SVGs */
+            --logo-color: #ffffff;
+            --icon-color: #ffffff;
+            
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.5);
+            --glow: 0 0 15px rgba(59, 130, 246, 0.25);
+        }
+
+        * { 
+            box-sizing: border-box; 
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease; 
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 2.5rem 1rem;
+            line-height: 1.7;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        /* Custom Tooltip Setup */
+        @media (hover: hover) {
+            [data-tooltip] { position: relative; cursor: help; }
+            [data-tooltip]::after {
+                content: attr(data-tooltip); position: absolute; bottom: calc(100% + 8px); left: 50%;
+                transform: translateX(-50%) translateY(5px); background: var(--text-main); color: var(--bg);
+                padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; white-space: nowrap;
+                opacity: 0; visibility: hidden; pointer-events: none; transition: all 0.2s ease;
+                box-shadow: var(--shadow-lg); z-index: 100;
+            }
+            [data-tooltip]::before {
+                content: ""; position: absolute; bottom: calc(100% + 2px); left: 50%; transform: translateX(-50%) translateY(5px);
+                border-width: 6px; border-style: solid; border-color: var(--text-main) transparent transparent transparent;
+                opacity: 0; visibility: hidden; pointer-events: none; transition: all 0.2s ease; z-index: 100;
+            }
+            [data-tooltip]:hover::after, [data-tooltip]:hover::before {
+                opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0);
+            }
+            [data-tooltip-pos="bottom"]::after { bottom: auto; top: calc(100% + 8px); }
+            [data-tooltip-pos="bottom"]::before { bottom: auto; top: calc(100% + 2px); border-color: transparent transparent var(--text-main) transparent; }
+        }
+
+        .toolbar {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;
+            background: var(--surface); padding: 1rem 1.5rem; border-radius: 12px;
+            box-shadow: var(--shadow-md); border: 1px solid var(--border);
+        }
+
+        .brand { display: flex; align-items: center; gap: 12px; }
+        .brand-text h1 { margin: 0; font-size: 1.15rem; font-weight: 700; letter-spacing: -0.3px; }
+        .brand-text .status { color: var(--success); font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+
+        .controls { display: flex; gap: 0.75rem; align-items: center; }
+
+        input[type="text"], textarea, select {
+            width: 100%; padding: 0.75rem 1rem; border-radius: 6px; border: 1px solid var(--border);
+            background: var(--bg); color: var(--text-main); font-size: 0.9rem; margin-bottom: 1rem;
+            outline: none; font-family: inherit;
+        }
+        
+        input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+
+        button, .btn {
+            padding: 0.5rem 1rem; border-radius: 6px; border: 1px solid var(--border);
+            background: var(--surface); color: var(--text-main); font-size: 0.85rem;
+            cursor: pointer; font-weight: 600; outline: none; box-shadow: var(--shadow-sm);
+            display: inline-flex; align-items: center; gap: 6px; text-decoration: none;
+        }
+        button:hover, .btn:hover { border-color: var(--icon-color); transform: translateY(-1px); }
+        .btn-primary { background: var(--text-main); color: var(--bg); border-color: var(--text-main); }
+        .btn-primary:hover { background: var(--icon-color); color: var(--bg); }
+        
+        .file-upload-wrapper { position: relative; overflow: hidden; display: inline-block; }
+        .file-upload-wrapper input[type="file"] { font-size: 100px; position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer; }
+
+        .app-grid { display: grid; grid-template-columns: 1fr 1.5fr; gap: 2rem; align-items: start; }
+
+        /* Form and Cards */
+        .panel { background: var(--surface); border-radius: 16px; padding: 2rem; box-shadow: var(--shadow-sm); border: 1px solid var(--border); }
+        .panel-title { font-size: 0.95rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); margin: 0 0 1.5rem 0; display: flex; justify-content: space-between; align-items: center;}
+        .panel-title::after { content: ""; flex: 1; height: 1px; background: var(--border); margin-left: 12px; }
+
+        .note-list { display: flex; flex-direction: column; gap: 1rem; max-height: 600px; overflow-y: auto; padding-right: 5px;}
+        .step-card {
+            background: var(--bg); border-radius: 12px; padding: 1.5rem;
+            border: 1px solid var(--border); display: grid; grid-template-columns: 40px 1fr; gap: 1rem;
+            align-items: start; position: relative;
+        }
+        .step-icon { width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; background: var(--surface); border-radius: 8px; border: 1px solid var(--border); }
+        .step-icon svg { width: 24px; height: 24px; stroke: var(--icon-color); fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+        .step-content h3 { margin: 0 0 0.25rem 0; font-size: 1.1rem; font-weight: 700; }
+        .step-content p { margin: 0 0 0.5rem 0; color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; background: var(--surface); border: 1px solid var(--border); }
+        .delete-btn { position: absolute; top: 1rem; right: 1rem; background: transparent; border: none; box-shadow: none; padding: 4px; color: var(--danger); cursor: pointer; }
+        .delete-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; }
+        .delete-btn:hover { background: var(--surface); border: 1px solid var(--danger); }
+
+        /* Visual Map (Architecture Diagram Style) */
+        .diagram-container { text-align: center; overflow-x: auto; padding: 1rem; min-height: 400px; display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+        .arch-node {
+            background: var(--bg); border: 2px solid var(--border); border-radius: 12px;
+            padding: 1.25rem; width: 200px; display: flex; flex-direction: column;
+            align-items: center; gap: 8px; transition: transform 0.3s ease, border-color 0.3s ease;
+            position: relative;
+        }
+        .arch-node:hover { transform: translateY(-4px); border-color: var(--accent); box-shadow: var(--glow); }
+        .arch-node svg { width: 32px; height: 32px; stroke: var(--text-main); fill: none; stroke-width: 1.5; }
+        .arch-node .node-title { font-size: 0.85rem; font-weight: 700; color: var(--text-main); text-align: center; word-wrap: break-word; width: 100%; }
+        .arch-connector { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--text-muted); margin: 4px 0; }
+        .arch-connector svg { width: 24px; height: 24px; stroke: var(--text-muted); stroke-width: 2; fill: none; }
+        
+        .map-row { display: flex; flex-direction: column; align-items: center; width: 100%; gap: 0.5rem; }
+        .map-children { display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap; margin-top: 0.5rem; }
+        .empty-state { color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 2rem; border: 1px dashed var(--border); border-radius: 8px; width: 100%; }
+
+        @media (max-width: 900px) {
+            .app-grid { grid-template-columns: 1fr; }
+            .toolbar { flex-direction: column; gap: 1rem; align-items: stretch; text-align: center; }
+            .brand { justify-content: center; flex-direction: column; }
+            .controls { justify-content: center; flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="toolbar">
+        <div class="brand">
+            <svg width="36" height="36" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="20" y="20" width="60" height="60" rx="12" stroke="var(--logo-color)" stroke-width="5"/>
+                <path d="M35 50 L 45 60 L 65 35" stroke="var(--logo-color)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M20 40 H 80" stroke="var(--logo-color)" stroke-width="5" stroke-dasharray="4 4"/>
+            </svg>
+            <div class="brand-text">
+                <h1>Smart Notebook by Alexandru Bratosin</h1>
+                <span class="status" data-tooltip-pos="bottom" data-tooltip="Data stored locally in memory">
+                    <svg width="8" height="8" viewBox="0 0 10 10" fill="var(--success)" xmlns="http://www.w3.org/2000/svg"><circle cx="5" cy="5" r="5"/></svg>
+                    <span>Offline Ready</span>
+                </span>
+            </div>
+        </div>
+        <div class="controls">
+            <div class="file-upload-wrapper">
+                <button class="btn" data-tooltip="Load JSON from device" data-tooltip-pos="bottom">📂 Import</button>
+                <input type="file" id="importFile" accept=".json" onchange="importJSON(event)">
+            </div>
+            <button class="btn" onclick="exportJSON()" data-tooltip="Save as JSON file" data-tooltip-pos="bottom">💾 Export</button>
+            <button class="btn" onclick="toggleTheme()" id="theme-btn" data-tooltip="Toggle Mode" data-tooltip-pos="bottom">☀️ Light</button>
+        </div>
+    </div>
+
+    <div class="app-grid">
+        <!-- Editor Column -->
+        <div class="panel">
+            <h2 class="panel-title">Add Entry</h2>
+            <form id="noteForm" onsubmit="addNote(event)">
+                <input type="text" id="title" placeholder="Title (e.g. Server Optimization)" required autocomplete="off">
+                
+                <select id="type" required onchange="updateLinkOptions()">
+                    <option value="Process">🔵 Process (Root)</option>
+                    <option value="Task">🟡 Task (Action Item)</option>
+                    <option value="Solution">🟢 Solution (Outcome)</option>
+                </select>
+
+                <select id="linkedTo" style="display: none;">
+                    <option value="">-- No Link (Standalone) --</option>
+                </select>
+
+                <textarea id="description" rows="3" placeholder="Brief description or context..." required></textarea>
+                
+                <button type="submit" class="btn-primary" style="width: 100%; justify-content: center;">+ Add to Notebook</button>
+            </form>
+
+            <h2 class="panel-title" style="margin-top: 2rem;">Notebook Log</h2>
+            <div id="noteList" class="note-list">
+                <div class="empty-state">No entries yet. Add a process above.</div>
+            </div>
+        </div>
+
+        <!-- Visual Map Column -->
+        <div class="panel">
+            <h2 class="panel-title">Visual Map Overview</h2>
+            <div id="diagramContainer" class="diagram-container">
+                <div class="empty-state">The visual map will generate here automatically.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- SVG Library ---
+    const icons = {
+        Process: `<svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`,
+        Task: `<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>`,
+        Solution: `<svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`,
+        LinkDown: `<svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>`
+    };
+
+    // --- State Management ---
+    let notes = [];
+    let isDark = true;
+
+    // --- Core Functions ---
+    function addNote(e) {
+        e.preventDefault();
+        const id = 'note_' + Date.now();
+        const title = document.getElementById('title').value;
+        const type = document.getElementById('type').value;
+        const description = document.getElementById('description').value;
+        const linkedTo = document.getElementById('linkedTo').value;
+
+        notes.push({ id, title, type, description, linkedTo });
+        
+        document.getElementById('noteForm').reset();
+        updateLinkOptions();
+        renderApp();
+    }
+
+    function deleteNote(id) {
+        notes = notes.filter(n => n.id !== id);
+        // Cascade delete or unlink logic could go here; keeping simple for now
+        notes.forEach(n => { if(n.linkedTo === id) n.linkedTo = ""; });
+        renderApp();
+    }
+
+    function updateLinkOptions() {
+        const typeSelector = document.getElementById('type');
+        const linkSelector = document.getElementById('linkedTo');
+        
+        linkSelector.innerHTML = '<option value="">-- No Link (Standalone) --</option>';
+        
+        if(typeSelector.value === 'Process') {
+            linkSelector.style.display = 'none';
+            linkSelector.value = "";
+        } else {
+            linkSelector.style.display = 'block';
+            notes.forEach(note => {
+                if (note.type !== 'Solution') { // Usually link tasks to processes, solutions to tasks/processes
+                    const opt = document.createElement('option');
+                    opt.value = note.id;
+                    opt.textContent = `Link to: [${note.type}] ${note.title}`;
+                    linkSelector.appendChild(opt);
+                }
+            });
+        }
+    }
+
+    // --- Rendering UI ---
+    function renderApp() {
+        renderList();
+        renderMap();
+        updateLinkOptions();
+    }
+
+    function renderList() {
+        const listDiv = document.getElementById('noteList');
+        if (notes.length === 0) {
+            listDiv.innerHTML = '<div class="empty-state">No entries yet. Add a process above.</div>';
+            return;
+        }
+
+        listDiv.innerHTML = '';
+        notes.slice().reverse().forEach(note => {
+            let linkText = "";
+            if (note.linkedTo) {
+                const parent = notes.find(n => n.id === note.linkedTo);
+                if (parent) linkText = `<div style="font-size: 0.75rem; color: var(--accent); margin-bottom: 4px;">↳ Linked to: ${parent.title}</div>`;
+            }
+
+            const card = document.createElement('div');
+            card.className = 'step-card';
+            card.innerHTML = `
+                <div class="step-icon">${icons[note.type]}</div>
+                <div class="step-content">
+                    <span class="badge">${note.type}</span>
+                    <h3 style="margin-top: 6px;">${note.title}</h3>
+                    ${linkText}
+                    <p>${note.description}</p>
+                </div>
+                <button class="delete-btn" onclick="deleteNote('${note.id}')" title="Delete Entry">
+                    <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            `;
+            listDiv.appendChild(card);
+        });
+    }
+
+    function renderMap() {
+        const mapDiv = document.getElementById('diagramContainer');
+        if (notes.length === 0) {
+            mapDiv.innerHTML = '<div class="empty-state">The visual map will generate here automatically.</div>';
+            return;
+        }
+
+        mapDiv.innerHTML = '';
+
+        // Separate root nodes (no links) and children
+        const roots = notes.filter(n => !n.linkedTo);
+        
+        if (roots.length === 0 && notes.length > 0) {
+             mapDiv.innerHTML = '<div class="empty-state">All nodes are orphaned or in circular reference.</div>';
+             return;
+        }
+
+        roots.forEach(root => {
+            const treeHtml = buildNodeTree(root.id);
+            const wrapper = document.createElement('div');
+            wrapper.style.width = '100%';
+            wrapper.style.paddingBottom = '2rem';
+            wrapper.style.borderBottom = '1px solid var(--border)';
+            wrapper.style.marginBottom = '2rem';
+            wrapper.innerHTML = treeHtml;
+            mapDiv.appendChild(wrapper);
+        });
+        
+        // Handle standalone items that were linked to a deleted parent
+        const missingParents = notes.filter(n => n.linkedTo && !notes.find(p => p.id === n.linkedTo));
+        missingParents.forEach(orphan => {
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = `<div class="map-row">${createNodeHTML(orphan)}</div>`;
+            mapDiv.appendChild(wrapper);
+        });
+    }
+
+    function buildNodeTree(parentId) {
+        const parentNode = notes.find(n => n.id === parentId);
+        if (!parentNode) return '';
+
+        const children = notes.filter(n => n.linkedTo === parentId);
+        
+        let html = `<div class="map-row">`;
+        html += createNodeHTML(parentNode);
+        
+        if (children.length > 0) {
+            html += `<div class="arch-connector">${icons.LinkDown}</div>`;
+            html += `<div class="map-children">`;
+            children.forEach(child => {
+                html += `<div>${buildNodeTree(child.id)}</div>`;
+            });
+            html += `</div>`;
+        }
+        
+        html += `</div>`;
+        return html;
+    }
+
+    function createNodeHTML(note) {
+        return `
+            <div class="arch-node" data-tooltip="${note.type}">
+                ${icons[note.type]}
+                <div class="node-title">${note.title}</div>
+            </div>
+        `;
+    }
+
+    // --- Import / Export ---
+    function exportJSON() {
+        if (notes.length === 0) {
+            alert("Notebook is empty. Nothing to save.");
+            return;
+        }
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(notes, null, 2));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", "smart-notebook-export.json");
+        document.body.appendChild(downloadAnchorNode); 
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+    }
+
+    function importJSON(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const parsed = JSON.parse(e.target.result);
+                if (Array.isArray(parsed)) {
+                    notes = parsed;
+                    renderApp();
+                    alert("Notebook loaded successfully!");
+                } else {
+                    alert("Invalid JSON format. Expected an array of notes.");
+                }
+            } catch (err) {
+                alert("Error parsing JSON file.");
+            }
+            event.target.value = ''; // Reset input
+        };
+        reader.readAsText(file);
+    }
+
+    // --- Theme Toggle ---
+    function toggleTheme() {
+        const htmlElement = document.documentElement;
+        const themeBtn = document.getElementById('theme-btn');
+        isDark = !isDark;
+        
+        if (isDark) {
+            htmlElement.setAttribute('data-theme', 'dark');
+            themeBtn.textContent = '☀️ Light';
+        } else {
+            htmlElement.setAttribute('data-theme', 'light');
+            themeBtn.textContent = '🌙 Dark';
+        }
+    }
+
+    // Initialize
+    updateLinkOptions();
+</script>
+
+</body>
+</html>
