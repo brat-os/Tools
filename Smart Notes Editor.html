@@ -1,0 +1,551 @@
+<!-- Author: Alexandru Bratosin -->
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Smart Notebook by Alexandru Bratosin</title>
+    <style>
+        :root {
+            /* True Light Theme */
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            
+            /* Enforced Black Text & SVGs */
+            --text-main: #000000;
+            --text-muted: #000000;
+            --logo-color: #000000;
+            --icon-color: #000000;
+            
+            --accent: #0078d4; 
+            --border: #cbd5e1;
+            --code-bg: #f1f5f9;
+            
+            /* Status Colors */
+            --success: #059669;
+            --warning: #d97706;
+            --danger: #dc2626;
+            
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+
+            /* Default Map Scale Variables (100%) */
+            --map-node-width: 100px;
+            --map-node-pad: 0.5rem;
+            --map-svg-size: 16px;
+            --map-font-size: 0.65rem;
+            --map-status-size: 0.55rem;
+            --map-line-height: 15px;
+        }
+
+        [data-theme="dark"] {
+            /* Refined Dark Theme */
+            --bg: #0b1120;
+            --surface: #1e293b;
+            
+            /* Enforced White Text & SVGs */
+            --text-main: #ffffff;
+            --text-muted: #ffffff;
+            --logo-color: #ffffff;
+            --icon-color: #ffffff;
+            
+            --accent: #3b82f6;
+            --border: #475569;
+            --code-bg: #000000;
+            
+            /* Status Colors */
+            --success: #10b981;
+            --warning: #fbbf24;
+            --danger: #ef4444;
+            
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5);
+        }
+
+        * { box-sizing: border-box; transition: background-color 0.3s ease, color 0.3s ease; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Inter", sans-serif; background-color: var(--bg); color: var(--text-main); margin: 0; padding: 2rem 1rem; line-height: 1.6; }
+        .container { max-width: 1600px; margin: 0 auto; }
+
+        /* Toolbar */
+        .toolbar { display: flex; justify-content: space-between; align-items: center; background: var(--surface); padding: 1rem 1.5rem; border-radius: 12px; box-shadow: var(--shadow-md); border: 1px solid var(--border); margin-bottom: 1.5rem; }
+        .brand { display: flex; align-items: center; gap: 12px; }
+        .brand h1 { margin: 0; font-size: 1.25rem; font-weight: 700; }
+        .controls { display: flex; gap: 0.75rem; align-items: center; }
+
+        /* Buttons & Standard Inputs */
+        button, .btn { padding: 0.5rem 1rem; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text-main); font-size: 0.85rem; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+        button:hover { border-color: var(--accent); }
+        .btn-primary { background: var(--text-main); color: var(--bg); border-color: var(--text-main); }
+        .btn-primary:hover { background: var(--icon-color); color: var(--bg); }
+        .btn-toggle { background: var(--accent); color: #ffffff; border: none; }
+        
+        .std-input { width: 100%; padding: 0.75rem; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text-main); font-size: 0.9rem; margin-bottom: 1rem; outline: none; font-family: inherit; }
+        .std-input:focus { border-color: var(--accent); }
+
+        /* STRICT Layout Grid: 60% Left (Notes), 40% Right (Map). */
+        .app-layout { display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 4fr); gap: 1.5rem; align-items: start; transition: all 0.3s ease; }
+        
+        /* FULLSCREEN SCALING (20% Increase) */
+        .app-layout.map-fullscreen { 
+            grid-template-columns: 1fr; 
+            --map-node-width: 120px; 
+            --map-node-pad: 0.6rem;
+            --map-svg-size: 19.2px;
+            --map-font-size: 0.78rem;
+            --map-status-size: 0.66rem;
+            --map-line-height: 18px;
+        }
+        .app-layout.map-fullscreen .editor-panel { display: none; }
+
+        /* Panels */
+        .panel { background: var(--surface); border-radius: 12px; padding: 1.5rem; box-shadow: var(--shadow-sm); border: 1px solid var(--border); }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+        .panel-title { font-size: 1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0; }
+
+        /* Editable Notes List */
+        .note-list { display: flex; flex-direction: column; gap: 1rem; max-height: 75vh; overflow-y: auto; padding-right: 5px; scroll-behavior: smooth; }
+        .note-card { background: var(--bg); border-radius: 8px; padding: 1rem; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 0.75rem; transition: box-shadow 0.2s, border-color 0.2s; }
+        
+        /* Highlight state for active note */
+        .note-card.selected { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.3); }
+        [data-theme="dark"] .note-card.selected { box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3); }
+
+        .note-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+        
+        /* Inline Editable Inputs */
+        .inline-input, .inline-select, .inline-textarea {
+            width: 100%; background: transparent; border: 1px solid transparent; color: var(--text-main); font-family: inherit; border-radius: 4px; padding: 4px; outline: none; transition: border-color 0.2s, background 0.2s;
+        }
+        .inline-input:hover, .inline-select:hover, .inline-textarea:hover { border-color: var(--border); }
+        .inline-input:focus, .inline-select:focus, .inline-textarea:focus { background: var(--surface); border-color: var(--accent); }
+        
+        .title-input { font-size: 1.05rem; font-weight: 700; }
+        .desc-input { font-size: 0.85rem; color: var(--text-muted); resize: vertical; min-height: 60px; background: var(--code-bg); border: 1px solid var(--border); }
+        .inline-select { font-size: 0.75rem; font-weight: 600; padding: 2px 4px; width: auto; border: 1px solid var(--border); background: var(--surface); cursor: pointer; }
+        
+        .delete-btn { background: transparent; border: none; padding: 4px; color: var(--danger); cursor: pointer; display: flex; }
+        .delete-btn:hover { background: var(--surface); border-radius: 4px; }
+
+        /* Professional CSS Tree Map */
+        .map-wrapper { overflow-x: auto; max-height: 80vh; padding: 1.5rem 0.5rem; display: flex; justify-content: flex-start; flex-direction: column; align-items: center; }
+        .tree ul { padding-top: var(--map-line-height); position: relative; display: flex; justify-content: center; padding-left: 0; list-style: none; margin: 0; transition: all 0.3s ease; }
+        .tree li { display: flex; flex-direction: column; align-items: center; position: relative; padding: var(--map-line-height) 5px 0 5px; transition: all 0.3s ease;}
+        
+        /* Tree Connecting Lines */
+        .tree li::before, .tree li::after {
+            content: ''; position: absolute; top: 0; right: 50%; border-top: 2px solid var(--border); width: 50%; height: var(--map-line-height); transition: all 0.3s ease;
+        }
+        .tree li::after { right: auto; left: 50%; border-left: 2px solid var(--border); }
+        
+        /* Clean Edges */
+        .tree li:only-child::after, .tree li:only-child::before { display: none; }
+        .tree li:only-child { padding-top: 0; }
+        .tree li:first-child::before, .tree li:last-child::after { border: 0 none; }
+        .tree li:last-child::before { border-right: 2px solid var(--border); border-radius: 0 6px 0 0; }
+        .tree li:first-child::after { border-radius: 6px 0 0 0; }
+        
+        /* Vertical line from parent */
+        .tree ul::before {
+            content: ''; position: absolute; top: 0; left: 50%; border-left: 2px solid var(--border); width: 0; height: var(--map-line-height); transform: translateX(-50%); transition: all 0.3s ease;
+        }
+        .tree > ul::before { display: none; }
+        .tree > ul > li { padding-top: 0; }
+
+        /* Map Node Styling - Dynamic Scale */
+        .arch-node { 
+            background: var(--bg); border: 2px solid var(--border); border-radius: 6px; 
+            padding: var(--map-node-pad); width: var(--map-node-width); 
+            display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s, width 0.3s, padding 0.3s; position: relative; z-index: 2;
+        }
+        .arch-node:hover { transform: translateY(-3px); border-color: var(--accent); }
+        .arch-node.selected { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.3); }
+        [data-theme="dark"] .arch-node.selected { box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3); }
+        
+        /* Status Borders */
+        .arch-node.pending { border-bottom-width: 4px; border-bottom-color: var(--danger); }
+        .arch-node.progress { border-bottom-width: 4px; border-bottom-color: var(--warning); }
+        .arch-node.done { border-bottom-width: 4px; border-bottom-color: var(--success); }
+        
+        .arch-node svg { width: var(--map-svg-size); height: var(--map-svg-size); stroke: var(--icon-color); fill: none; stroke-width: 2; transition: all 0.3s ease;}
+        .node-title { font-size: var(--map-font-size); font-weight: 700; word-wrap: break-word; width: 100%; color: var(--text-main); line-height: 1.2; transition: all 0.3s ease;}
+        .node-status-text { font-size: var(--map-status-size); color: var(--text-muted); text-transform: uppercase; margin-top: 2px; transition: all 0.3s ease;}
+        
+        .empty-state { color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 2rem; border: 1px dashed var(--border); border-radius: 8px; width: 100%; }
+        .file-upload-wrapper { position: relative; overflow: hidden; display: inline-block; }
+        .file-upload-wrapper input[type="file"] { font-size: 100px; position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer; }
+
+        @media (max-width: 1024px) {
+            .app-layout { grid-template-columns: 1fr; }
+            .toolbar { flex-direction: column; gap: 1rem; align-items: stretch; }
+            .controls { justify-content: center; flex-wrap: wrap; }
+            .app-layout.map-fullscreen .editor-panel { display: block; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Datalist for Custom Types Support -->
+<datalist id="nodeTypes">
+    <option value="Process"></option>
+    <option value="Task"></option>
+    <option value="Solution"></option>
+    <option value="Decision"></option>
+    <option value="Milestone"></option>
+    <option value="Issue"></option>
+    <option value="Note"></option>
+</datalist>
+
+<div class="container">
+    <div class="toolbar">
+        <div class="brand">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--logo-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+            </svg>
+            <h1>Smart Notes Editor by Alexandru Bratosin</h1>
+        </div>
+        <div class="controls">
+            <div class="file-upload-wrapper">
+                <button class="btn">📂 Import JSON</button>
+                <input type="file" id="importFile" accept=".json" onchange="importJSON(event)">
+            </div>
+            <button class="btn" onclick="exportJSON()">💾 Export JSON</button>
+            <button class="btn" onclick="toggleTheme()" id="theme-btn">☀️ Light</button>
+        </div>
+    </div>
+
+    <!-- Main Layout: 60% Editor (Left), 40% Map (Right) -->
+    <div class="app-layout" id="appLayout">
+        
+        <!-- LEFT: Editor & Notes List -->
+        <div class="editor-panel">
+            
+            <!-- Quick Add Form -->
+            <div class="panel" style="margin-bottom: 1.5rem;">
+                <div class="panel-header"><h2 class="panel-title">Add New Node</h2></div>
+                <form id="noteForm" onsubmit="addNote(event)">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <input type="text" id="title" class="std-input" placeholder="Node Title" required autocomplete="off" style="margin:0;">
+                        <!-- Using Datalist for Custom Types -->
+                        <input type="text" id="type" list="nodeTypes" class="std-input" placeholder="Select or type custom (e.g. Process)" required oninput="updateMainFormLinkOptions()" style="margin:0;">
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+                        <select id="status" class="std-input" required style="margin:0;">
+                            <option value="pending">🔴 Pending</option>
+                            <option value="progress">🟠 In Progress</option>
+                            <option value="done">🟢 Completed</option>
+                        </select>
+                        <select id="linkedTo" class="std-input" style="margin:0;"><option value="">-- Standalone --</option></select>
+                    </div>
+
+                    <textarea id="description" class="std-input" rows="2" placeholder="Brief description..." required style="margin-top: 1rem; resize: vertical;"></textarea>
+                    
+                    <button type="submit" class="btn-primary" style="width: 100%; justify-content: center; margin-top: 0.5rem;">+ Add Node</button>
+                </form>
+            </div>
+
+            <!-- Interactive Notes List -->
+            <div class="panel">
+                <div class="panel-header"><h2 class="panel-title">Editable Notes Database</h2></div>
+                <div id="noteList" class="note-list">
+                    <div class="empty-state">No entries yet. Add a node above.</div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- RIGHT: Visual Process Map -->
+        <div class="panel map-panel">
+            <div class="panel-header">
+                <h2 class="panel-title">Process Map</h2>
+                <button class="btn btn-toggle" onclick="toggleFullscreen()" id="fs-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                    Expand Map
+                </button>
+            </div>
+            <div id="diagramContainer" class="map-wrapper">
+                <div class="empty-state">Map will generate here.</div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    // Expanded Icons Dictionary with Fallback
+    const icons = {
+        Process: `<svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`,
+        Task: `<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>`,
+        Solution: `<svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`,
+        Decision: `<svg viewBox="0 0 24 24"><polygon points="12 2 22 12 12 22 2 12 12 2"></polygon></svg>`,
+        Milestone: `<svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`,
+        Issue: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`,
+        Note: `<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>`,
+        Default: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="4"></circle></svg>`, // Used for custom types
+        Trash: `<svg width="18" height="18" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`
+    };
+
+    let notes = JSON.parse(localStorage.getItem('smart_notes_editor')) || [];
+    let isDark = true;
+    let isFullscreen = false;
+    let selectedNodeId = null;
+
+    // --- Core Operations ---
+    function addNote(e) {
+        e.preventDefault();
+        
+        // Capitalize first letter of type for consistency
+        let inputType = document.getElementById('type').value.trim();
+        inputType = inputType.charAt(0).toUpperCase() + inputType.slice(1);
+
+        const note = {
+            id: 'n_' + Date.now(),
+            title: document.getElementById('title').value,
+            type: inputType,
+            status: document.getElementById('status').value,
+            description: document.getElementById('description').value,
+            linkedTo: document.getElementById('linkedTo').value
+        };
+
+        notes.push(note);
+        saveData();
+        document.getElementById('noteForm').reset();
+        selectedNodeId = note.id;
+        renderApp();
+        focusListCard(note.id);
+    }
+
+    function updateNote(id, field, value) {
+        const noteIndex = notes.findIndex(n => n.id === id);
+        if (noteIndex > -1) {
+            if (field === 'linkedTo' && value === id) return alert("A node cannot link to itself.");
+            if (field === 'type') {
+                value = value.trim();
+                value = value.charAt(0).toUpperCase() + value.slice(1);
+            }
+            
+            notes[noteIndex][field] = value;
+            saveData();
+            
+            if(field !== 'description') {
+                renderApp();
+            }
+        }
+    }
+
+    function deleteNote(id) {
+        if(confirm("Are you sure you want to delete this node?")) {
+            notes = notes.filter(n => n.id !== id);
+            notes.forEach(n => { if(n.linkedTo === id) n.linkedTo = ""; });
+            if(selectedNodeId === id) selectedNodeId = null;
+            saveData();
+            renderApp();
+        }
+    }
+
+    function saveData() {
+        localStorage.setItem('smart_notes_editor', JSON.stringify(notes));
+    }
+
+    // --- Select & Focus Handlers ---
+    function selectNode(id) {
+        selectedNodeId = id;
+        renderApp();
+        focusListCard(id);
+    }
+
+    function focusListCard(id) {
+        const card = document.getElementById(`card-${id}`);
+        if (card) {
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const input = card.querySelector('.title-input');
+            if(input) { setTimeout(() => input.focus(), 300); }
+        }
+    }
+
+    function updateMainFormLinkOptions() {
+        const typeValue = document.getElementById('type').value.toLowerCase();
+        const linkSelector = document.getElementById('linkedTo');
+        linkSelector.innerHTML = '<option value="">-- Standalone --</option>';
+        
+        // Only allow linking if not strictly a 'Process' (roots shouldn't necessarily be linked)
+        if(typeValue !== 'process') {
+            notes.forEach(note => {
+                linkSelector.innerHTML += `<option value="${note.id}">[${note.type}] ${note.title}</option>`;
+            });
+        }
+    }
+
+    // --- Rendering Logic ---
+    function renderApp() {
+        renderList();
+        renderMap();
+        updateMainFormLinkOptions();
+    }
+
+    function renderList() {
+        const listDiv = document.getElementById('noteList');
+        if (notes.length === 0) {
+            listDiv.innerHTML = '<div class="empty-state">No entries yet. Add a node above.</div>';
+            return;
+        }
+
+        listDiv.innerHTML = '';
+        
+        const generateStatusOptions = (selected) => [
+            {val: 'pending', label: '🔴 Pending'}, {val: 'progress', label: '🟠 In Progress'}, {val: 'done', label: '🟢 Completed'}
+        ].map(s => `<option value="${s.val}" ${selected===s.val?'selected':''}>${s.label}</option>`).join('');
+
+        [...notes].reverse().forEach(note => {
+            const isSelected = selectedNodeId === note.id ? 'selected' : '';
+            
+            let linkOptions = `<option value="">-- Standalone --</option>`;
+            notes.forEach(n => {
+                if(n.id !== note.id) {
+                    linkOptions += `<option value="${n.id}" ${note.linkedTo === n.id ? 'selected' : ''}>[${n.type}] ${n.title}</option>`;
+                }
+            });
+
+            let linkDisplay = "";
+            if (note.linkedTo) {
+                const parent = notes.find(n => n.id === note.linkedTo);
+                if (parent) linkDisplay = `<div style="font-size: 0.75rem; color: var(--accent); margin-bottom: 8px;">↳ Linked to: ${parent.title}</div>`;
+            }
+
+            const card = document.createElement('div');
+            card.className = `note-card ${isSelected}`;
+            card.id = `card-${note.id}`;
+            card.onclick = (e) => { 
+                if(e.target.tagName !== 'INPUT' && e.target.tagName !== 'SELECT' && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'BUTTON') {
+                    if(selectedNodeId !== note.id) selectNode(note.id);
+                }
+            };
+            
+            card.innerHTML = `
+                <div class="note-card-header">
+                    <input type="text" class="inline-input title-input" value="${note.title}" onchange="updateNote('${note.id}', 'title', this.value)" title="Edit Title">
+                    <button class="delete-btn" onclick="deleteNote('${note.id}')" title="Delete Node">${icons.Trash}</button>
+                </div>
+                ${linkDisplay}
+                <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+                    <!-- Inline Custom Type Input using Datalist -->
+                    <input type="text" class="inline-input" list="nodeTypes" value="${note.type}" onchange="updateNote('${note.id}', 'type', this.value)" title="Node Type" style="width: 110px; font-weight:600; font-size:0.75rem; border:1px solid var(--border); padding:3px 6px;">
+                    
+                    <select class="inline-select" onchange="updateNote('${note.id}', 'status', this.value)">${generateStatusOptions(note.status)}</select>
+                    <select class="inline-select" onchange="updateNote('${note.id}', 'linkedTo', this.value)">${linkOptions}</select>
+                </div>
+                <textarea class="inline-textarea desc-input" rows="2" onchange="updateNote('${note.id}', 'description', this.value)" placeholder="Add description...">${note.description}</textarea>
+            `;
+            listDiv.appendChild(card);
+        });
+    }
+
+    function renderMap() {
+        const mapDiv = document.getElementById('diagramContainer');
+        if (notes.length === 0) {
+            mapDiv.innerHTML = '<div class="empty-state">Map will generate here.</div>';
+            return;
+        }
+
+        const roots = notes.filter(n => !n.linkedTo || !notes.find(p => p.id === n.linkedTo));
+        
+        let html = '<div class="tree"><ul>';
+        roots.forEach(root => { html += buildTreeHTML(root.id); });
+        html += '</ul></div>';
+        
+        mapDiv.innerHTML = html;
+    }
+
+    function buildTreeHTML(nodeId) {
+        const node = notes.find(n => n.id === nodeId);
+        if(!node) return '';
+        const children = notes.filter(n => n.linkedTo === nodeId);
+        
+        const isSelected = selectedNodeId === node.id ? 'selected' : '';
+        const nodeIcon = icons[node.type] || icons.Default;
+        
+        let html = `<li>`;
+        html += `
+            <div class="arch-node ${node.status} ${isSelected}" onclick="selectNode('${node.id}')" title="Click to Edit">
+                ${nodeIcon}
+                <div class="node-title">${node.title}</div>
+                <div class="node-status-text">${node.type} • ${node.status}</div>
+            </div>
+        `;
+        
+        if (children.length > 0) {
+            html += `<ul>`;
+            children.forEach(child => { html += buildTreeHTML(child.id); });
+            html += `</ul>`;
+        }
+        html += `</li>`;
+        return html;
+    }
+
+    // --- UI Interactions ---
+    function toggleFullscreen() {
+        const layout = document.getElementById('appLayout');
+        const btn = document.getElementById('fs-btn');
+        isFullscreen = !isFullscreen;
+        
+        if (isFullscreen) {
+            layout.classList.add('map-fullscreen');
+            btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg> Close Map`;
+        } else {
+            layout.classList.remove('map-fullscreen');
+            btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg> Expand Map`;
+        }
+    }
+
+    function toggleTheme() {
+        const htmlElement = document.documentElement;
+        const themeBtn = document.getElementById('theme-btn');
+        isDark = !isDark;
+        if (isDark) {
+            htmlElement.setAttribute('data-theme', 'dark');
+            themeBtn.textContent = '☀️ Light';
+        } else {
+            htmlElement.setAttribute('data-theme', 'light');
+            themeBtn.textContent = '🌙 Dark';
+        }
+    }
+
+    // --- File Import / Export ---
+    function exportJSON() {
+        if (notes.length === 0) return alert("Notebook is empty.");
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(notes, null, 2));
+        const anchor = document.createElement('a');
+        anchor.href = dataStr;
+        anchor.download = "notebook-by-alexandru-bratosin.json";
+        document.body.appendChild(anchor); 
+        anchor.click();
+        anchor.remove();
+    }
+
+    function importJSON(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const parsed = JSON.parse(e.target.result);
+                if (Array.isArray(parsed)) {
+                    notes = parsed;
+                    selectedNodeId = null;
+                    saveData();
+                    renderApp();
+                } else alert("Invalid format. Expected an array.");
+            } catch (err) { alert("Error parsing JSON."); }
+            event.target.value = ''; 
+        };
+        reader.readAsText(file);
+    }
+
+    // Boot App
+    renderApp();
+</script>
+
+</body>
+</html>
