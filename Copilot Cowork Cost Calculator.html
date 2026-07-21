@@ -1,0 +1,552 @@
+<!-- Author: Alexandru Bratosin -->
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Copilot Coworker Cost Calculator by Alexandru Bratosin</title>
+    <style>
+        :root {
+            /* Light Theme */
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --text-main: #000000;
+            --text-muted: #475569;
+            --logo-color: #000000;
+            --icon-color: #000000;
+            --accent: #0078d4; 
+            --accent-hover: #106ebe;
+            --border: #cbd5e1;
+            --code-bg: #f1f5f9;
+            --code-text: #000000;
+            --success: #059669;
+            --warning: #d97706;
+            --danger: #dc2626;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+
+        [data-theme="dark"] {
+            /* Dark Theme */
+            --bg: #0b1120;
+            --surface: #1e293b;
+            --text-main: #ffffff;
+            --text-muted: #94a3b8;
+            --logo-color: #ffffff;
+            --icon-color: #ffffff;
+            --accent: #3b82f6;
+            --accent-hover: #60a5fa;
+            --border: #475569;
+            --code-bg: #000000;
+            --code-text: #4ade80;
+            --success: #10b981;
+            --warning: #fbbf24;
+            --danger: #ef4444;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5);
+        }
+
+        * { box-sizing: border-box; transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg); color: var(--text-main); margin: 0; padding: 2rem 1rem; line-height: 1.6; }
+        .container { max-width: 1100px; margin: 0 auto; }
+
+        /* Toolbar */
+        .toolbar { display: flex; justify-content: space-between; align-items: center; background: var(--surface); padding: 1rem 1.5rem; border-radius: 12px; box-shadow: var(--shadow-md); border: 1px solid var(--border); margin-bottom: 1.5rem; }
+        .brand { display: flex; align-items: center; gap: 12px; }
+        .brand h1 { margin: 0; font-size: 1.25rem; font-weight: 700; letter-spacing: -0.5px; }
+        .controls { display: flex; gap: 0.75rem; align-items: center; }
+
+        /* Inputs & Buttons */
+        button, select, input { padding: 0.6rem 1rem; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text-main); font-size: 0.9rem; outline: none; font-family: inherit; }
+        button { cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; box-shadow: var(--shadow-sm); }
+        button:hover, select:hover { border-color: var(--accent); }
+        input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.2); }
+        input:read-only { background: var(--code-bg); cursor: not-allowed; opacity: 0.8; }
+        .btn-primary { background: var(--accent); color: #ffffff; border-color: var(--accent); }
+        .btn-primary:hover { background: var(--accent-hover); }
+
+        /* Tabs System */
+        .tabs-nav { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 2px solid var(--border); padding-bottom: 0px; overflow-x: auto; scrollbar-width: none; }
+        .tabs-nav::-webkit-scrollbar { display: none; }
+        .tab-btn { background: transparent; border: none; border-bottom: 3px solid transparent; border-radius: 0; box-shadow: none; padding: 0.75rem 1.5rem; font-size: 0.95rem; color: var(--text-muted); font-weight: 600; white-space: nowrap; }
+        .tab-btn:hover { border-bottom-color: var(--border); color: var(--text-main); }
+        .tab-btn.active { border-bottom-color: var(--accent); color: var(--accent); }
+        .tab-content { display: none; animation: fadeIn 0.3s ease; }
+        .tab-content.active { display: block; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Panels & Grids */
+        .panel { background: var(--surface); border-radius: 12px; padding: 2rem; box-shadow: var(--shadow-md); border: 1px solid var(--border); margin-bottom: 1.5rem; }
+        .calc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start; }
+        
+        .input-group { margin-bottom: 1.25rem; }
+        .input-group label { display: block; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.9rem; }
+        .input-group input { width: 100%; background: var(--bg); }
+        .input-hint { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
+        
+        /* Results Board */
+        .results-board { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; }
+        .result-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid var(--border); }
+        .result-item:last-child { border-bottom: none; padding-bottom: 0; }
+        .result-label { font-weight: 600; font-size: 0.95rem; }
+        .result-value { font-size: 1.25rem; font-weight: 800; font-family: monospace; }
+        .highlight-value { color: var(--success); font-size: 1.75rem; }
+
+        /* Commands Grid */
+        .skills-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; }
+        .skill-card { border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; background: var(--bg); text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; transition: transform 0.2s; }
+        .skill-card:hover { transform: translateY(-4px); border-color: var(--accent); }
+        .cmd-badge { background: var(--accent); color: #ffffff; padding: 6px 16px; border-radius: 6px; font-family: monospace; font-size: 1.1rem; font-weight: 700; letter-spacing: 1px; }
+        .skill-card h3 { margin: 0; font-size: 1.05rem; }
+        .skill-card p { margin: 0; font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; }
+
+        /* Data Table */
+        .data-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        .data-table th, .data-table td { padding: 1rem; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.95rem; }
+        .data-table th { font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; font-size: 0.8rem; }
+        .data-table tr:hover td { background: var(--bg); }
+        .code-snippet { background: var(--code-bg); color: var(--code-text); padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 0.85rem; border: 1px solid var(--border); }
+
+        .disclaimer { text-align: center; font-size: 0.8rem; color: var(--text-muted); margin-top: 2rem; padding-top: 1rem; border-top: 1px dashed var(--border); }
+
+        @media (max-width: 768px) {
+            .toolbar { flex-direction: column; gap: 1rem; align-items: stretch; text-align: center; }
+            .controls { justify-content: center; }
+            .calc-grid { grid-template-columns: 1fr; }
+            .data-table { display: block; overflow-x: auto; white-space: nowrap; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="toolbar">
+        <div class="brand">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--logo-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2a10 10 0 1 0 10 10H12V2z"></path>
+                <path d="M12 12 21.1 2.9a10 10 0 0 1 0 14.2z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            <h1 id="appTitle">Copilot Coworker Cost Calculator</h1>
+        </div>
+        <div class="controls">
+            <select id="lang-selector" onchange="renderUI()">
+                <option value="en">English (EN)</option>
+                <option value="de">Deutsch (DE)</option>
+            </select>
+            <button onclick="toggleTheme()" id="theme-btn">☀️ Light</button>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="tabs-nav">
+        <button class="tab-btn active" onclick="switchTab('tab-payg')" id="tabNavPayg">PAYG Estimator</button>
+        <button class="tab-btn" onclick="switchTab('tab-roi')" id="tabNavRoi">ROI Calculator</button>
+        <button class="tab-btn" onclick="switchTab('tab-skills')" id="tabNavSkills">Cowork Commands</button>
+        <button class="tab-btn" onclick="switchTab('tab-examples')" id="tabNavExamples">Cost Examples</button>
+    </div>
+
+    <!-- TAB 1: PAYG Calculator (Main Page) -->
+    <div id="tab-payg" class="tab-content active">
+        <div class="panel">
+            <div class="calc-grid">
+                <!-- Inputs -->
+                <div>
+                    <h2 style="margin-top:0;" id="hdrPaygInputs">Pay-As-You-Go Variables</h2>
+                    
+                    <div class="input-group">
+                        <label id="lblPaygUsers">Number of Users</label>
+                        <input type="number" id="valPaygUsers" value="100" min="1" step="1" oninput="calculatePAYG()">
+                    </div>
+
+                    <div class="input-group">
+                        <label id="lblPaygTasks">Prompts / Tasks per User (Monthly)</label>
+                        <input type="number" id="valPaygTasks" value="150" min="1" step="1" oninput="calculatePAYG()">
+                    </div>
+
+                    <div class="input-group">
+                        <label id="lblPaygCredits">Average Credits per Task</label>
+                        <input type="number" id="valPaygCredits" value="15" min="1" step="1" oninput="calculatePAYG()">
+                        <div class="input-hint" id="hintPaygCredits">Basic AI: 1 credit | Standard: 15 credits | Premium/Reasoning: 100 credits.</div>
+                    </div>
+
+                    <div class="input-group">
+                        <label id="lblPaygPrice">Price per Credit ($)</label>
+                        <!-- Price is locked at $0.01 per standard Microsoft PAYG pricing -->
+                        <input type="number" id="valPaygPrice" value="0.01" readonly>
+                    </div>
+
+                    <button class="btn-primary" onclick="calculatePAYG()" style="width:100%; justify-content: center; padding: 0.75rem;" id="btnCalcPayg">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        Calculate Estimate
+                    </button>
+                </div>
+
+                <!-- Results -->
+                <div>
+                    <h2 style="margin-top:0;" id="hdrPaygResults">Monthly Estimate</h2>
+                    <div class="results-board">
+                        <div class="result-item">
+                            <span class="result-label" id="resLblTotalCredits">Total Monthly Credits</span>
+                            <span class="result-value" id="outTotalCredits">0</span>
+                        </div>
+                        <div class="result-item" style="flex-direction: column; align-items: flex-start; gap: 8px; border-top: 2px dashed var(--border); margin-top: 10px; padding-top: 15px;">
+                            <span class="result-label" id="resLblTotalCost">Estimated Monthly Cost</span>
+                            <span class="result-value highlight-value" id="outPaygCost">$0.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 2: ROI Calculator -->
+    <div id="tab-roi" class="tab-content">
+        <div class="panel">
+            <div class="calc-grid">
+                <div>
+                    <h2 style="margin-top:0;" id="hdrRoiInputs">Human vs AI Efficiency</h2>
+                    <div class="input-group">
+                        <label id="lblHourlyRate">Human Hourly Rate ($)</label>
+                        <input type="number" id="valHourlyRate" value="35" min="1" step="1" oninput="calculateROI()">
+                        <div class="input-hint" id="hintHourlyRate">Average cost per hour of employee time.</div>
+                    </div>
+                    <div class="input-group">
+                        <label id="lblHumanTime">Time per Task - Human (Minutes)</label>
+                        <input type="number" id="valHumanTime" value="30" min="1" step="1" oninput="calculateROI()">
+                    </div>
+                    <div class="input-group">
+                        <label id="lblTasksMonth">Volume (Total Tasks per Month)</label>
+                        <input type="number" id="valTasksMonth" value="1000" min="1" step="1" oninput="calculateROI()">
+                    </div>
+                    <div class="input-group">
+                        <label id="lblAiCost">AI Estimated Run Cost ($)</label>
+                        <input type="number" id="valAiCost" value="0.15" min="0.001" step="0.001" oninput="calculateROI()">
+                        <div class="input-hint" id="hintAiCost">E.g., 15 credits x 0.01 = $0.15 per task.</div>
+                    </div>
+                    <button class="btn-primary" onclick="calculateROI()" style="width:100%; justify-content: center; padding: 0.75rem;" id="btnCalculate">
+                        Calculate ROI
+                    </button>
+                </div>
+                <div>
+                    <h2 style="margin-top:0;" id="hdrRoiResults">ROI Impact</h2>
+                    <div class="results-board">
+                        <div class="result-item">
+                            <span class="result-label" id="resLblHumanCost">Manual Labor Cost</span>
+                            <span class="result-value" id="outHumanCost">$0.00</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label" id="resLblAiCost">AI Execution Cost</span>
+                            <span class="result-value" id="outAiCost">$0.00</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label" id="resLblTimeSaved">Time Saved (Hours)</span>
+                            <span class="result-value" id="outTimeSaved" style="color:var(--accent);">0 hrs</span>
+                        </div>
+                        <div class="result-item" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+                            <span class="result-label" id="resLblNetSavings">Estimated Net Savings</span>
+                            <span class="result-value highlight-value" id="outNetSavings">$0.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 3: Commands / Skills -->
+    <div id="tab-skills" class="tab-content">
+        <div class="panel">
+            <h2 style="margin-top:0;" id="hdrSkills">Copilot Cowork Slash Commands</h2>
+            <div class="skills-grid" id="skillsGridContainer">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 4: Examples -->
+    <div id="tab-examples" class="tab-content">
+        <div class="panel">
+            <h2 style="margin-top:0;" id="hdrExamples">Common Prompt Costs</h2>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th id="thTask">Task / Prompt</th>
+                        <th id="thTokens">Avg. Credits</th>
+                        <th id="thCost">Est. Cost ($)</th>
+                        <th id="thHuman">Human Eqv.</th>
+                    </tr>
+                </thead>
+                <tbody id="examplesTableBody">
+                    <!-- Injected via JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="disclaimer" id="txtDisclaimer">
+        * Disclaimer: This is an approximate calculation. Real-world costs can vary based on Microsoft Copilot Studio pricing tiers, token lengths, pay-as-you-go settings ($0.01/credit), and infrastructure setup. Created by Alexandru Bratosin.
+    </div>
+
+</div>
+
+<script>
+    // Bilingual Data Dictionary
+    const langData = {
+        en: {
+            appTitle: "Copilot Coworker Cost Calculator <span style='font-size:0.8rem; font-weight:400; color:var(--text-muted);'>by Alexandru Bratosin</span>",
+            tabs: { payg: "PAYG Estimator", roi: "ROI Calculator", skills: "Cowork Commands", examples: "Cost Examples" },
+            payg: {
+                hdrInputs: "Pay-As-You-Go Variables",
+                hdrResults: "Monthly Estimate",
+                lblUsers: "Number of Users",
+                lblTasks: "Prompts / Tasks per User (Monthly)",
+                lblCredits: "Average Credits per Task",
+                hintCredits: "Basic AI: 1 credit | Standard: 15 credits | Premium/Reasoning: 100 credits.",
+                lblPrice: "Price per Credit ($)",
+                btnCalculate: "Calculate Estimate",
+                resLblTotalCredits: "Total Monthly Credits",
+                resLblTotalCost: "Estimated Monthly Cost"
+            },
+            roi: {
+                hdrInputs: "Human vs AI Efficiency",
+                hdrResults: "ROI Impact",
+                lblHourlyRate: "Human Hourly Rate ($)",
+                hintHourlyRate: "Average cost per hour of employee time.",
+                lblHumanTime: "Time per Task - Human (Minutes)",
+                lblTasksMonth: "Volume (Total Tasks per Month)",
+                lblAiCost: "AI Estimated Run Cost ($)",
+                hintAiCost: "E.g., 15 credits x 0.01 = $0.15 per task.",
+                btnCalculate: "Calculate ROI",
+                resLblHumanCost: "Manual Labor Cost",
+                resLblAiCost: "AI Execution Cost",
+                resLblTimeSaved: "Time Saved (Hours)",
+                resLblNetSavings: "Estimated Net Savings"
+            },
+            skillsTitle: "Copilot Cowork Slash Commands",
+            skills: [
+                { cmd: "/help", title: "Show Commands", desc: "Displays a scrollable list of available slash commands and usage instructions for your current AI session." },
+                { cmd: "/clear", title: "Reset Session", desc: "Clears the current session entirely, purging the working memory to start fresh without context limitations." },
+                { cmd: "/cost", title: "Usage & Metrics", desc: "Checks current token and credit usage, system capacity, and displays cost multipliers for your session." },
+                { cmd: "/model", title: "Switch AI Model", desc: "Allows you to select a different AI model to balance between deep reasoning (premium) and speed (basic)." },
+                { cmd: "/context", title: "Manage Memory", desc: "Displays how much information Copilot can 'remember' and summarizes the conversation to free up buffer space." }
+            ],
+            examplesTitle: "Common Prompt Costs (Microsoft Copilot Studio)",
+            tableHeaders: { task: "Task / Prompt", tokens: "Avg. Credits", cost: "Est. Cost ($)", human: "Human Eqv." },
+            examples: [
+                { task: "Quick FAQ / Basic Scripted Response", tokens: "1", cost: "0.01", human: "5 mins" },
+                { task: "Draft an email reply / Standard AI generation", tokens: "15", cost: "0.15", human: "15 mins" },
+                { task: "Analyze a CSV file and find sales anomalies", tokens: "45", cost: "0.45", human: "60 mins" },
+                { task: "Deep reasoning & multi-step workflow automation", tokens: "100", cost: "1.00", human: "120 mins" }
+            ],
+            disclaimer: "* Disclaimer: This is an approximate calculation. Real-world costs can vary based on Microsoft Copilot Studio pricing tiers, token lengths, pay-as-you-go settings ($0.01/credit), and specific infrastructure. Created by Alexandru Bratosin."
+        },
+        de: {
+            appTitle: "KI-Kollege Kostenrechner <span style='font-size:0.8rem; font-weight:400; color:var(--text-muted);'>von Alexandru Bratosin</span>",
+            tabs: { payg: "PAYG Rechner", roi: "ROI Rechner", skills: "Cowork Befehle", examples: "Kostenbeispiele" },
+            payg: {
+                hdrInputs: "Pay-As-You-Go Variablen",
+                hdrResults: "Monatliche Schätzung",
+                lblUsers: "Anzahl der Nutzer",
+                lblTasks: "Prompts / Aufgaben pro Nutzer (Monatlich)",
+                lblCredits: "Durchschnittliche Credits pro Aufgabe",
+                hintCredits: "Basis KI: 1 Credit | Standard: 15 Credits | Premium/Logik: 100 Credits.",
+                lblPrice: "Preis pro Credit (€)",
+                btnCalculate: "Schätzung Berechnen",
+                resLblTotalCredits: "Monatliche Credits Gesamt",
+                resLblTotalCost: "Geschätzte Monatliche Kosten"
+            },
+            roi: {
+                hdrInputs: "Mensch vs KI Effizienz",
+                hdrResults: "ROI Auswirkung",
+                lblHourlyRate: "Menschlicher Stundenlohn (€)",
+                hintHourlyRate: "Durchschnittliche Kosten pro Arbeitsstunde.",
+                lblHumanTime: "Zeit pro Aufgabe - Mensch (Minuten)",
+                lblTasksMonth: "Volumen (Aufgaben pro Monat gesamt)",
+                lblAiCost: "Geschätzte KI-Laufkosten (€)",
+                hintAiCost: "Z.B. 15 Credits x 0.01 = 0,15 € pro Aufgabe.",
+                btnCalculate: "ROI Berechnen",
+                resLblHumanCost: "Manuelle Arbeitskosten",
+                resLblAiCost: "KI-Ausführungskosten",
+                resLblTimeSaved: "Gesparte Zeit (Stunden)",
+                resLblNetSavings: "Geschätzte Nettoersparnis"
+            },
+            skillsTitle: "Copilot Cowork Slash-Befehle",
+            skills: [
+                { cmd: "/help", title: "Befehle Anzeigen", desc: "Zeigt eine scrollbare Liste der verfügbaren Slash-Befehle und Nutzungshinweise für die aktuelle KI-Sitzung." },
+                { cmd: "/clear", title: "Sitzung Zurücksetzen", desc: "Löscht die aktuelle Sitzung vollständig und leert den Arbeitsspeicher, um ohne Kontextgrenzen neu zu starten." },
+                { cmd: "/cost", title: "Nutzung & Metriken", desc: "Überprüft den aktuellen Token- und Credit-Verbrauch sowie die Systemkapazität und Kostenmultiplikatoren." },
+                { cmd: "/model", title: "KI-Modell Wechseln", desc: "Ermöglicht die Auswahl eines anderen KI-Modells, um tiefgreifende Logik (Premium) und Geschwindigkeit (Basis) auszubalancieren." },
+                { cmd: "/context", title: "Speicher Verwalten", desc: "Zeigt an, an wie viel sich Copilot 'erinnern' kann, und fasst die Konversation zusammen, um Platz zu schaffen." }
+            ],
+            examplesTitle: "Typische Prompt-Kosten (Microsoft Copilot Studio)",
+            tableHeaders: { task: "Aufgabe / Prompt", tokens: "Ø Credits", cost: "Gesch. Kosten (€)", human: "Menschl. Äquiv." },
+            examples: [
+                { task: "Kurze FAQ / Einfache Skriptantwort", tokens: "1", cost: "0,01", human: "5 Min." },
+                { task: "E-Mail-Antwort entwerfen / Standard-KI", tokens: "15", cost: "0,15", human: "15 Min." },
+                { task: "CSV analysieren und Umsatzanomalien finden", tokens: "45", cost: "0,45", human: "60 Min." },
+                { task: "Tiefgehende Logik & mehrstufige Workflows", tokens: "100", cost: "1,00", human: "120 Min." }
+            ],
+            disclaimer: "* Haftungsausschluss: Dies ist eine ungefähre Berechnung. Tatsächliche Kosten können je nach Microsoft Copilot Studio Preisstufen, Token-Längen, Pay-As-You-Go-Einstellungen (0,01 €/Credit) und Infrastruktur variieren. Erstellt von Alexandru Bratosin."
+        }
+    };
+
+    let isDark = true;
+    let currentCurrency = "$";
+
+    // --- Tab Logic ---
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        
+        document.getElementById(tabId).classList.add('active');
+        
+        if(tabId === 'tab-payg') document.getElementById('tabNavPayg').classList.add('active');
+        if(tabId === 'tab-roi') document.getElementById('tabNavRoi').classList.add('active');
+        if(tabId === 'tab-skills') document.getElementById('tabNavSkills').classList.add('active');
+        if(tabId === 'tab-examples') document.getElementById('tabNavExamples').classList.add('active');
+    }
+
+    // --- Calculation Logic ---
+    function calculatePAYG() {
+        const users = parseFloat(document.getElementById('valPaygUsers').value) || 0;
+        const tasks = parseFloat(document.getElementById('valPaygTasks').value) || 0;
+        const credits = parseFloat(document.getElementById('valPaygCredits').value) || 0;
+        const price = 0.01; // Standardized $0.01 per credit Pay-As-You-Go
+
+        const totalCredits = users * tasks * credits;
+        const totalCost = totalCredits * price;
+
+        document.getElementById('outTotalCredits').textContent = new Intl.NumberFormat().format(totalCredits);
+        document.getElementById('outPaygCost').textContent = formatMoney(totalCost);
+    }
+
+    function calculateROI() {
+        const hourlyRate = parseFloat(document.getElementById('valHourlyRate').value) || 0;
+        const humanTimeMins = parseFloat(document.getElementById('valHumanTime').value) || 0;
+        const tasksPerMonth = parseFloat(document.getElementById('valTasksMonth').value) || 0;
+        const aiRunCost = parseFloat(document.getElementById('valAiCost').value) || 0;
+
+        const humanCostPerTask = (humanTimeMins / 60) * hourlyRate;
+        const totalHumanCost = humanCostPerTask * tasksPerMonth;
+        const totalAiCost = aiRunCost * tasksPerMonth;
+        const netSavings = totalHumanCost - totalAiCost;
+        const hoursSaved = (humanTimeMins * tasksPerMonth) / 60;
+
+        document.getElementById('outHumanCost').textContent = formatMoney(totalHumanCost);
+        document.getElementById('outAiCost').textContent = formatMoney(totalAiCost);
+        document.getElementById('outTimeSaved').textContent = hoursSaved.toFixed(1) + (currentCurrency === "$" ? " hrs" : " Std.");
+        document.getElementById('outNetSavings').textContent = formatMoney(netSavings);
+    }
+
+    function formatMoney(amount) {
+        const formatter = new Intl.NumberFormat('en-US', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const val = formatter.format(amount);
+        return currentCurrency === "$" ? `$${val}` : `${val} €`;
+    }
+
+    // --- UI Rendering ---
+    function renderUI() {
+        const lang = document.getElementById('lang-selector').value;
+        const data = langData[lang];
+        currentCurrency = lang === 'en' ? "$" : "€";
+
+        // Global
+        document.getElementById('appTitle').innerHTML = data.appTitle;
+        document.getElementById('txtDisclaimer').textContent = data.disclaimer;
+
+        // Tabs
+        document.getElementById('tabNavPayg').textContent = data.tabs.payg;
+        document.getElementById('tabNavRoi').textContent = data.tabs.roi;
+        document.getElementById('tabNavSkills').textContent = data.tabs.skills;
+        document.getElementById('tabNavExamples').textContent = data.tabs.examples;
+
+        // Tab 1: PAYG Texts
+        document.getElementById('hdrPaygInputs').textContent = data.payg.hdrInputs;
+        document.getElementById('lblPaygUsers').textContent = data.payg.lblUsers;
+        document.getElementById('lblPaygTasks').textContent = data.payg.lblTasks;
+        document.getElementById('lblPaygCredits').textContent = data.payg.lblCredits;
+        document.getElementById('hintPaygCredits').textContent = data.payg.hintCredits;
+        document.getElementById('lblPaygPrice').textContent = data.payg.lblPrice;
+        document.getElementById('btnCalcPayg').innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> ${data.payg.btnCalculate}`;
+        document.getElementById('hdrPaygResults').textContent = data.payg.hdrResults;
+        document.getElementById('resLblTotalCredits').textContent = data.payg.resLblTotalCredits;
+        document.getElementById('resLblTotalCost').textContent = data.payg.resLblTotalCost;
+
+        // Tab 2: ROI Texts
+        document.getElementById('hdrRoiInputs').textContent = data.roi.hdrInputs;
+        document.getElementById('hdrRoiResults').textContent = data.roi.hdrResults;
+        document.getElementById('lblHourlyRate').textContent = data.roi.lblHourlyRate;
+        document.getElementById('hintHourlyRate').textContent = data.roi.hintHourlyRate;
+        document.getElementById('lblHumanTime').textContent = data.roi.lblHumanTime;
+        document.getElementById('lblTasksMonth').textContent = data.roi.lblTasksMonth;
+        document.getElementById('lblAiCost').textContent = data.roi.lblAiCost;
+        document.getElementById('hintAiCost').textContent = data.roi.hintAiCost;
+        document.getElementById('btnCalculate').textContent = data.roi.btnCalculate;
+        document.getElementById('resLblHumanCost').textContent = data.roi.resLblHumanCost;
+        document.getElementById('resLblAiCost').textContent = data.roi.resLblAiCost;
+        document.getElementById('resLblTimeSaved').textContent = data.roi.resLblTimeSaved;
+        document.getElementById('resLblNetSavings').textContent = data.roi.resLblNetSavings;
+
+        // Tab 3: Commands/Skills
+        document.getElementById('hdrSkills').textContent = data.skillsTitle;
+        const skillsContainer = document.getElementById('skillsGridContainer');
+        skillsContainer.innerHTML = '';
+        data.skills.forEach(skill => {
+            skillsContainer.innerHTML += `
+                <div class="skill-card">
+                    <div class="cmd-badge">${skill.cmd}</div>
+                    <h3>${skill.title}</h3>
+                    <p>${skill.desc}</p>
+                </div>
+            `;
+        });
+
+        // Tab 4: Examples
+        document.getElementById('hdrExamples').textContent = data.examplesTitle;
+        document.getElementById('thTask').textContent = data.tableHeaders.task;
+        document.getElementById('thTokens').textContent = data.tableHeaders.tokens;
+        document.getElementById('thCost').textContent = data.tableHeaders.cost;
+        document.getElementById('thHuman').textContent = data.tableHeaders.human;
+
+        const tableBody = document.getElementById('examplesTableBody');
+        tableBody.innerHTML = '';
+        data.examples.forEach(ex => {
+            tableBody.innerHTML += `
+                <tr>
+                    <td><strong>${ex.task}</strong></td>
+                    <td><span class="code-snippet">${ex.tokens}</span></td>
+                    <td style="color:var(--success); font-weight:700;">${currentCurrency === "$" ? "$" : ""}${ex.cost}${currentCurrency === "€" ? " €" : ""}</td>
+                    <td>${ex.human}</td>
+                </tr>
+            `;
+        });
+
+        // Run calculations to update UI
+        calculatePAYG();
+        calculateROI();
+    }
+
+    // --- Theme Toggle ---
+    function toggleTheme() {
+        const htmlElement = document.documentElement;
+        const themeBtn = document.getElementById('theme-btn');
+        isDark = !isDark;
+        
+        if (isDark) {
+            htmlElement.setAttribute('data-theme', 'dark');
+            themeBtn.textContent = '☀️ Light';
+        } else {
+            htmlElement.setAttribute('data-theme', 'light');
+            themeBtn.textContent = '🌙 Dark';
+        }
+    }
+
+    // Initialize
+    window.onload = () => {
+        renderUI();
+    };
+</script>
+
+</body>
+</html>
